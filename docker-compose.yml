@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: pizza_db
+    environment:
+      POSTGRES_DB: pizza_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+
+    ports:
+      - '5432:5432'
