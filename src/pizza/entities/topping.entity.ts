@@ -3,8 +3,8 @@ import { IsEnum, IsNotEmpty } from 'class-validator';
 
 export enum ToppingName {
   PEPPERONI = 'pepperoni',
-  MUSHROOM = 'mushroom',
-  ONION = 'onion',
+  MUSHROOM = 'mushrooms',
+  ONION = 'onions',
   SAUSAGE = 'sausage',
   BACON = 'bacon',
   EXTRA_CHEESE = 'extra_cheese',

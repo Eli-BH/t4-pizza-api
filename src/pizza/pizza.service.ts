@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CreatePizzaDto } from './dto/create-pizza.dto';
-import { Size } from './entities/size.entity';
-import { Sauce } from './entities/sauce.entity';
-import { Topping } from './entities/topping.entity';
+import { Size, SizeName } from './entities/size.entity';
+import { Sauce, SauceName } from './entities/sauce.entity';
+import { Topping, ToppingName } from './entities/topping.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Pizza } from './entities/pizza.entity';
@@ -22,70 +22,58 @@ export class PizzaService {
 
   async getMenu() {
     try {
-      const sizes = await this.sizeRepository.find();
-      const sauces = await this.sauceRepository.find();
-      const toppings = await this.toppingRepository.find();
-
-      return {
-        sizes,
-        sauces,
-        toppings,
+      const menuOptions = {
+        sizes: Object.values(SizeName),
+        sauces: Object.values(SauceName),
+        toppings: Object.values(ToppingName),
       };
+
+      return menuOptions;
     } catch (error) {
       throw new Error('Failed to retrieve menu');
     }
   }
 
   async createPizza(createPizzaDto: CreatePizzaDto): Promise<Pizza> {
-    try {
-      const { size, sauce, toppings } = createPizzaDto;
+    const { size, sauce, toppings } = createPizzaDto;
 
-      // retrieve pizza ingredients
-      const pizzaSize = await this.sizeRepository.findOne({
-        where: { name: size },
-      });
+    const pizzaSize = await this.sizeRepository.findOne({
+      where: { name: size },
+    });
+    const pizzaSauce = await this.sauceRepository.findOne({
+      where: { name: sauce },
+    });
+    const pizzaToppings: Topping[] = [];
 
-      const pizzaSauce = await this.sauceRepository.findOne({
-        where: { name: sauce },
-      });
-      const pizzaToppings: Topping[] = [];
-
-      // validate dto with ingredients
-      if (!pizzaSize) {
-        throw new Error('Invalid size');
-      }
-
-      if (!pizzaSauce) {
-        throw new Error('Invalid sauce');
-      }
-
-      for (const topping of toppings) {
-        const pizzaTopping = await this.toppingRepository.findOne({
-          where: { name: topping },
-        });
-        if (!pizzaTopping) {
-          throw new Error(`Invalid topping: ${topping}`);
-          /*
-            if we don't find the topping we can also log a
-            warning and skip to available toppings
-              console.warn(`Topping not found: ${topping}. Skipping...`);
-              continue;
-          */
-        }
-        pizzaToppings.push(pizzaTopping);
-      }
-
-      const newPizza = this.pizzaRepository.create({
-        size: pizzaSize,
-        sauce: pizzaSauce,
-        toppings: pizzaToppings,
-      });
-
-      await this.pizzaRepository.save(newPizza);
-      return newPizza;
-    } catch (error) {
-      throw new Error(`Failed to create pizza: ${error.message}`);
+    if (!pizzaSize) {
+      throw new Error(`Size ${size} is not available`);
     }
+
+    if (!pizzaSauce) {
+      throw new Error(`Sauce ${sauce} is not available`);
+    }
+
+    for (const topping of toppings) {
+      const pizzaTopping = await this.toppingRepository.findOne({
+        where: { name: topping },
+      });
+      if (!pizzaTopping) {
+        // if we don't find the topping, we can log a warning and continue with available toppings
+        // console.warn(`Topping ${topping} is not available`);
+        // continue;
+        throw new Error(`Topping ${topping} is not available`);
+      }
+      pizzaToppings.push(pizzaTopping);
+    }
+
+    const newPizza = this.pizzaRepository.create({
+      size: pizzaSize,
+      sauce: pizzaSauce,
+      toppings: pizzaToppings,
+    });
+
+    await this.pizzaRepository.save(newPizza);
+    return newPizza;
   }
 
   async removePizza(id: number): Promise<void> {
